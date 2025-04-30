@@ -245,9 +245,9 @@ function joinProduction(production) {
 // Estructura para pasos de derivación
 class DerivationStep {
     constructor() {
-        this.stack = [];
-        this.input = [];
-        this.rule = '';
+        this.stack = [];    // estado de la pila (['E', '$'])
+        this.input = [];    // tokens pendientes (['id', '+', 'id', '$'])
+        this.rule = '';     // qué regla se aplicó ("E → T E'")
     }
 }
 
@@ -349,23 +349,6 @@ function parseWithTrace(entrada, grammar) {
     return trace;
 }
 
-function displayDerivationTable(trace) {
-    output += "+----------------------------+-----------------------------------+--------------------------------+\n";
-    output += "| PILA                       | ENTRADA                           | ACCIÓN                         |\n";
-    output += "+----------------------------+-----------------------------------+--------------------------------+\n";
-    
-    for (const step of trace) {
-        const stack = step.stack.join(" ");
-        const input = step.input.join(" ");
-        const action = step.rule;
-        
-        output += `| ${padRight(stack, 26)} | ${padRight(input, 33)} | ${padRight(action, 30)} |\n`;
-    }
-    output += "+----------------------------+-----------------------------------+--------------------------------+\n";
-    
-    return output;
-}
-
 // Función auxiliar para padding
 function padRight(str, length) {
     return str + " ".repeat(Math.max(0, length - str.length));
@@ -420,14 +403,6 @@ function tokenize(input, grammar) {
     }
     
     return tokens;
-}
-
-// Mostrar gramática
-function displayGrammar(grammar) {
-    let output = "Gramática:\n";
-    output += "No terminales: " + Array.from(grammar.nonTerminals).join(" ") + "\n";
-    output += "Terminales: " + Array.from(grammar.terminals).join(" ") + "\n";
-    return output;
 }
 
 // Calcular conjunto FIRST
@@ -559,25 +534,6 @@ function computeFollow(grammar, first) {
     return follow;
 }
 
-function displayFirstFollow(grammar) {
-    const first = computeFirst(grammar);
-    const follow = computeFollow(grammar, first);
-    
-    let output = "\nConjuntos FIRST y FOLLOW:\n";
-    output += "+--------------+----------------------+----------------------+\n";
-    output += "| No Terminal  | FIRST                | FOLLOW               |\n";
-    output += "+--------------+----------------------+----------------------+\n";
-    
-    for (const nt of grammar.nonTerminals) {
-        const firstSet = Array.from(first.get(nt)).join(" ");
-        const followSet = Array.from(follow.get(nt)).join(" ");
-        output += `| ${padRight(nt, 12)} | ${padRight(firstSet, 20)} | ${padRight(followSet, 20)} |\n`;
-    }
-    output += "+--------------+----------------------+----------------------+\n";
-    
-    return output;
-}
-
 // Construir tabla LL(1)
 function buildLL1Table(grammar) {
     const first = computeFirst(grammar);
@@ -629,35 +585,6 @@ function buildLL1Table(grammar) {
         }
     }
     return table;
-}
-
-function displayLL1Table(grammar) {
-    const table = buildLL1Table(grammar);
-    const terminals = Array.from(grammar.terminals).sort();
-    
-    let output = "\nTabla LL(1):\n";
-    output += "+--------------+" + "-".repeat(terminals.length * 12) + "+\n";
-    output += "| No Terminal  |";
-    
-    // Encabezados de terminales
-    for (const term of terminals) {
-        output += ` ${padRight(term, 10)} |`;
-    }
-    output += "\n+" + "-".repeat(14) + "+" + "-".repeat(terminals.length * 12) + "+\n";
-    
-    // Filas de no terminales
-    for (const nt of grammar.nonTerminals) {
-        output += `| ${padRight(nt, 12)} |`;
-        
-        for (const term of terminals) {
-            const production = table.get(nt)?.get(term) || "";
-            output += ` ${padRight(production, 10)} |`;
-        }
-        output += "\n";
-    }
-    output += "+" + "-".repeat(14) + "+" + "-".repeat(terminals.length * 12) + "+\n";
-    
-    return output;
 }
 
 function analyze(grammarText, input) {

@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Elementos del DOM
     const grammarTextarea = document.getElementById('grammar');
     const inputTextarea = document.getElementById('input');
     const outputDiv = document.getElementById('output');
@@ -8,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const example2Btn = document.getElementById('example2-btn');
     const clearBtn = document.getElementById('clear-btn');
 
-    // Ejemplo 1: Gramática simple de expresiones aritméticas
+    // Ejemplo 1 default: Gramática simple de expresiones aritméticas
     const example1Grammar = `P → SL
 SL → S SL'
 SL' → ; S SL'
@@ -26,7 +25,7 @@ F → id
 F → num
 F → ( E )`;
 
-    // Ejemplo 2: Gramática para funciones
+    // Ejemplo 2 default: Gramática para funciones
     const example2Grammar = `F → fun id ( P ) { B }
 P → id P'
 P → ε 
@@ -63,10 +62,9 @@ E → id`;
                 return;
             }
             
-            // Realizar análisis
+            //  análisis sintáctico con traza
             const trace = parseWithTrace([...tokens], grammar);
             
-            // Mostrar resultados
             displayResults(grammar, trace);
             
         } catch (error) {
