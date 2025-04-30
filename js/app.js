@@ -164,67 +164,6 @@ E → id`;
         return html;
     }
 
-    // function generateLL1Table(grammar) {
-    //     const first = computeFirst(grammar);
-    //     const follow = computeFollow(grammar, first);
-    //     const table = buildLL1Table(grammar);
-    //     const terminals = Array.from(grammar.terminals).sort();
-        
-    //     let html = '<div class="section"><h3>Tabla LL(1)</h3>';
-    //     html += '<div class="table-container"><table class="ll1-table"><thead><tr><th>No Terminal</th>';
-        
-    //     // Encabezados de terminales
-    //     terminals.forEach(term => {
-    //         html += `<th>${term}</th>`;
-    //     });
-    //     html += '</tr></thead><tbody>';
-        
-    //     // Filas para cada no terminal
-    //     for (const nt of grammar.nonTerminals) {
-    //         html += `<tr><td>${nt}</td>`;
-            
-    //         // Celdas para cada terminal
-    //         terminals.forEach(term => {
-    //             if (table.get(nt)?.has(term)) {
-    //                 const production = table.get(nt).get(term);
-    //                 html += `<td>${production.split('→')[1]?.trim() || production.split('->')[1]?.trim()}</td>`;
-    //             } else {
-    //                 // Decidir entre Extraer o Explorar
-    //                 if (follow.get(nt).has(term) && first.get(nt).has('ε')) {
-    //                     html += '<td class="pop-cell">Extraer</td>';
-    //                 } else {
-    //                     html += '<td class="error-cell">Explorar</td>';
-    //                 }
-    //             }
-    //         });
-            
-    //         html += '</tr>';
-    //     }
-        
-    //     html += '</tbody></table></div></div>';
-    //     return html;
-    // }
-    // function generateLL1Table(grammar) {
-    //     const first = computeFirst(grammar);
-    //     const follow = computeFollow(grammar, first);
-    //     const table = buildLL1Table(grammar);
-    //     const terminals = Array.from(grammar.terminals).sort();
-    
-    //     let html = '<table class="ll1-table"><tr><th>No Terminal</th>';
-    //     terminals.forEach(term => html += `<th>${term}</th>`);
-    //     html += '</tr>';
-    
-    //     grammar.nonTerminals.forEach(nt => {
-    //         html += `<tr><td>${nt}</td>`;
-    //         terminals.forEach(term => {
-    //             html += `<td>${getCellContent(nt, term, table, first, follow)}</td>`;
-    //         });
-    //         html += '</tr>';
-    //     });
-    
-    //     return html + '</table>';
-    // }
-
     // Función para formatear tabla de derivación
     function formatDerivationTable(trace) {
         let html = '<table class="derivation-table"><thead><tr><th>PILA</th><th>ENTRADA</th><th>ACCIÓN</th></tr></thead><tbody>';
