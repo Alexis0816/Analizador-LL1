@@ -132,34 +132,99 @@ E → id`;
         return html;
     }
 
-    // Función para generar tabla LL(1)
     function generateLL1Table(grammar) {
-        const table = buildLL1Table(grammar);
+        const first = computeFirst(grammar);
+        const follow = computeFollow(grammar, first);
+        const table = new Map();
         const terminals = Array.from(grammar.terminals).sort();
         
+        for (const nt of grammar.nonTerminals) {
+            table.set(nt, new Map());
+            for (const term of terminals) {
+                table.get(nt).set(term, '');
+            }
+        }
+    
+        for (const prodPair of grammar.orderedProductions) {
+            const nt = prodPair.nonTerminal;
+            const prods = prodPair.productions;
+    
+            for (const prod of prods) {
+                let firstSet = new Set();
+                let epsilonFound = false;
+    
+                if (prod[0] === "ε" || prod[0] === "epsilon") {
+                    firstSet.add("ε");
+                } else {
+                    for (const symbol of prod) {
+                        const symbolFirst = first.get(symbol);
+                        for (const item of symbolFirst) {
+                            if (item !== "ε") {
+                                firstSet.add(item);
+                            }
+                        }
+    
+                        if (!symbolFirst.has("ε")) {
+                            epsilonFound = false;
+                            break;
+                        }
+                    }
+                }
+    
+                for (const term of firstSet) {
+                    if (term !== "ε") {
+                        if (!table.get(nt).get(term)) { 
+                            table.get(nt).set(term, `${nt} → ${prod.join(' ')}`);
+                        }
+                    }
+                }
+    
+                if (firstSet.has("ε")) {
+                    for (const followTerm of follow.get(nt)) {
+                        if (!table.get(nt).get(followTerm)) {
+                            table.get(nt).set(followTerm, `${nt} → ${prod.join(' ')}`);
+                        }
+                    }
+                }
+            }
+        }
+    
+        for (const nt of grammar.nonTerminals) {
+            for (const term of terminals) {
+                const action = table.get(nt).get(term);
+                if (action === '') {
+                    if (follow.get(nt).has(term)) {
+                        table.get(nt).set(term, 'extract');
+                    } else {
+                        table.get(nt).set(term, 'explore');
+                    }
+                }
+            }
+        }
+    
+        for (const nt of grammar.nonTerminals) {
+            const action = table.get(nt).get('$');
+            if (!action) {
+                table.get(nt).set('$', 'explore');
+            }
+        }
+    
         let html = '<div class="section"><h3>Tabla LL(1)</h3>';
         html += '<div class="table-container"><table class="ll1-table"><thead><tr><th>No Terminal</th>';
-        
-        // Encabezados de terminales
         terminals.forEach(term => {
             html += `<th>${term}</th>`;
         });
         html += '</tr></thead><tbody>';
-        
-        // Filas para cada no terminal
+    
         for (const nt of grammar.nonTerminals) {
             html += `<tr><td>${nt}</td>`;
-            
-            // Celdas para cada terminal
             terminals.forEach(term => {
-                const production = table.get(nt)?.get(term) || '';
-                const productionText = production.split('→')[1]?.trim() || production.split('->')[1]?.trim() || '';
-                html += `<td>${productionText || '-'}</td>`;
+                const production = table.get(nt).get(term);
+                html += `<td>${production || '-'}</td>`;
             });
-            
             html += '</tr>';
         }
-        
+    
         html += '</tbody></table></div></div>';
         return html;
     }
