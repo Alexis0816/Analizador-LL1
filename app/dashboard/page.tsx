@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Terminal, Code, BookOpen } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import PDFDownloadButton from '@/components/PDFDownloadButton'; // Importar el componente
 
 // Importar el analizador LL1
 import LL1, {
@@ -45,7 +46,9 @@ S → return E ;
 E → id`;
 
 // Componente de título animado para las tablas
-const AnimatedTableTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+import { ReactNode } from 'react';
+
+const AnimatedTableTitle = ({ children }: { children: ReactNode }) => (
   <motion.h2 
     className="text-2xl font-bold mb-4"
     initial={{ opacity: 0, y: -10 }}
@@ -57,7 +60,7 @@ const AnimatedTableTitle: React.FC<{ children: React.ReactNode }> = ({ children 
 );
 
 // Componente para las filas de tabla con animación
-const AnimatedTableRow: React.FC<{ children: React.ReactNode; index: number }> = ({ children, index }) => (
+const AnimatedTableRow = ({ children, index }: { children: React.ReactNode; index: number }) => (
   <motion.tr
     initial={{ opacity: 0, x: -20 }}
     animate={{ opacity: 1, x: 0 }}
@@ -85,6 +88,7 @@ export default function Dashboard() {
   const [isScriptLoaded, setIsScriptLoaded] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState<boolean>(false);
 
   // Verificar si el script está cargado
   useEffect(() => {
@@ -229,6 +233,15 @@ export default function Dashboard() {
     }
   };
 
+  // Manejadores para el estado de generación de PDF
+  const handlePDFGenerateStart = () => {
+    setIsGeneratingPDF(true);
+  };
+
+  const handlePDFGenerateEnd = () => {
+    setIsGeneratingPDF(false);
+  };
+
   // Cargar ejemplos predefinidos
   const loadExample1 = () => {
     setGrammar(EXAMPLE1_GRAMMAR);
@@ -276,15 +289,18 @@ export default function Dashboard() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
+      id="pdf-container"
     >
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
       >
-        <Card className="mb-6 shadow-lg border-gray-800">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-gray-700 via-gray-900 to-black bg-clip-text text-transparent">
+        <Card className="mb-6 shadow-lg ">
+          <CardHeader className="relative overflow-hidden">
+            {/* Logo de UTEC en la esquina superior derecha */}
+            
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r text-black bg-clip-text">
               Analizador LL(1) Parser
             </CardTitle>
             <CardDescription className="text-lg">
@@ -326,6 +342,20 @@ export default function Dashboard() {
         </motion.div>
       )}
 
+      {isGeneratingPDF && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed top-10 right-10 bg-blue-500 text-white p-4 rounded-md shadow-lg z-50"
+        >
+          <div className="flex items-center">
+            <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+            <p>Generando PDF...</p>
+          </div>
+        </motion.div>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4 p-1 bg-gray-200 dark:bg-gray-800 rounded-lg">
           <TabsTrigger value="grammar" className="transition-all duration-300 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 rounded">
@@ -341,6 +371,8 @@ export default function Dashboard() {
             </div>
           </TabsTrigger>
         </TabsList>
+        
+        
 
         <AnimatePresence mode="wait">
           {activeTab === "grammar" && (
@@ -474,6 +506,15 @@ export default function Dashboard() {
                     initial="hidden"
                     animate="visible"
                   >
+                    {/* Botón de descarga de PDF como componente */}
+                    <PDFDownloadButton 
+                      grammar={grammar}
+                      input={input}
+                      results={results}
+                      onGenerateStart={handlePDFGenerateStart}
+                      onGenerateEnd={handlePDFGenerateEnd}
+                    />
+
                     <motion.div variants={itemVariants}>
                       <Card className="mb-6 shadow-lg border-gray-200 dark:border-gray-800">
                         <CardHeader className="pb-2">
@@ -483,7 +524,7 @@ export default function Dashboard() {
                           <div className="overflow-x-auto">
                             <Table>
                               <TableHeader>
-                                <TableRow>
+                                <TableRow className="border-b-2 border-gray-400 dark:border-gray-600">
                                   <TableHead className="text-lg font-bold">No Terminal</TableHead>
                                   <TableHead className="text-lg font-bold">FIRST</TableHead>
                                   <TableHead className="text-lg font-bold">FOLLOW</TableHead>
