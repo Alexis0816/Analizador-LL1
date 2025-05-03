@@ -220,14 +220,23 @@ E → id`;
             html += `<tr><td>${nt}</td>`;
             terminals.forEach(term => {
                 const production = table.get(nt).get(term);
-                html += `<td>${production || '-'}</td>`;
+                let cellClass = '';
+                if (production === 'explore') {
+                    cellClass = 'class="explore"';
+                } else if (production === 'extract') {
+                    cellClass = 'class="extract"';
+                }
+                else {
+                    cellClass = 'class="rule"';
+                }
+                html += `<td ${cellClass}>${production || '-'}</td>`;
             });
             html += '</tr>';
         }
     
         html += '</tbody></table></div></div>';
         return html;
-    }
+    }    
 
     // Función para formatear tabla de derivación
     function formatDerivationTable(trace) {
