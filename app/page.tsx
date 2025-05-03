@@ -178,7 +178,7 @@ export default function Home() {
             
           </CardHeader>
           <CardContent className="text-center px-6 pb-8">
-          <CardTitle className="text-xl text-center text-black">Ronald Jesus Condor Blas</CardTitle>
+          <CardTitle className="text-xl text-center text-black">Ronal Jesus Condor Blas</CardTitle>
             <CardDescription className="text-center text-gray-600">
               Ciencias de la Computación
             </CardDescription>

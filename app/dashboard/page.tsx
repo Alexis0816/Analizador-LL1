@@ -80,7 +80,7 @@ export default function Dashboard() {
   const [input, setInput] = useState<string>("id = num + num ; print ( id + num )");
   const [results, setResults] = useState<{
     firstFollow: { nonTerminal: string, first: string[], follow: string[] }[],
-    ll1Table: { nonTerminal: string, terminals: Record<string, string> }[],
+    ll1Table: { nonTerminal: string, terminals: Record<string, string> }[], // Keep original type
     derivation: { stack: string[], input: string[], rule: string }[]
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -160,7 +160,7 @@ export default function Dashboard() {
         setIsAnalyzing(false);
         return;
       }
-      
+
       // Realizar análisis sintáctico con traza
       const trace = parseWithTrace([...tokens], grammarObj);
       console.log("Trace:", trace);
@@ -186,17 +186,26 @@ export default function Dashboard() {
         };
       });
       
-      // Formato para tabla LL(1)
+      // Formato para tabla LL(1) con soporte para explore/extract
       const ll1TableData = Array.from(grammarObj.nonTerminals).map(nt => {
         const ntStr = String(nt);
-        const terminalEntries: Record<string, string> = {};
+        const terminalEntries: Record<string, string> = {}; // Keep as string
         
         terminals.forEach(term => {
           const termStr = String(term);
           const tableLookup = ll1Table.get(ntStr);
-          terminalEntries[termStr] = tableLookup && tableLookup.get(termStr) 
-            ? String(tableLookup.get(termStr)) 
-            : '-';
+          let cellValue = '';
+          
+          // Determine if it should be a production, extract, or explore
+          if (tableLookup && tableLookup.get(termStr)) {
+            cellValue = String(tableLookup.get(termStr));
+          } else if (follow.get(ntStr)?.has(termStr)) {
+            cellValue = 'extract';
+          } else {
+            cellValue = 'explore';
+          }
+          
+          terminalEntries[termStr] = cellValue;
         });
         
         return {
@@ -283,6 +292,18 @@ export default function Dashboard() {
     }
   };
 
+  // Función para obtener la clase CSS según la acción
+  const getCellClass = (value: string) => {
+    if (value === 'extract') {
+      return 'bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700';
+    } else if (value === 'explore') {
+      return 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700';
+    } else if (value && value !== '-') {
+      return 'bg-white dark:bg-neutral-800 border border-neutral-400 dark:border-neutral-600';
+    }
+    return '';
+  };
+
   return (
     <motion.div 
       className="container mx-auto py-6 px-4"
@@ -298,8 +319,6 @@ export default function Dashboard() {
       >
         <Card className="mb-6 shadow-lg ">
           <CardHeader className="relative overflow-hidden">
-            {/* Logo de UTEC en la esquina superior derecha */}
-            
             <CardTitle className="text-3xl font-bold bg-gradient-to-r text-black bg-clip-text">
               Analizador LL(1) Parser
             </CardTitle>
@@ -372,8 +391,6 @@ export default function Dashboard() {
           </TabsTrigger>
         </TabsList>
         
-        
-
         <AnimatePresence mode="wait">
           {activeTab === "grammar" && (
             <motion.div
@@ -564,9 +581,14 @@ export default function Dashboard() {
                               {results.ll1Table.map((row, index) => (
                                 <AnimatedTableRow key={index} index={index}>
                                   <TableCell className="font-mono sticky left-0 bg-white dark:bg-gray-900 z-10 text-gray-900 dark:text-gray-100 group-hover:bg-gray-100 dark:group-hover:bg-gray-800">{row.nonTerminal}</TableCell>
-                                  {Object.values(row.terminals).map((production, idx) => (
-                                    <TableCell key={idx} className="font-mono whitespace-nowrap text-gray-900 dark:text-gray-100">{production}</TableCell>
-                                  ))}
+                                  {Object.entries(row.terminals).map(([terminal, value], idx) => (
+  <TableCell 
+    key={idx} 
+    className={`font-mono whitespace-nowrap text-gray-900 dark:text-gray-100 transition-colors duration-200 ${getCellClass(value)}`}
+  >
+    {value}
+  </TableCell>
+))}
                                 </AnimatedTableRow>
                               ))}
                             </TableBody>
