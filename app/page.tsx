@@ -12,6 +12,7 @@ import JoaquínImage from '../public/images/joaquin.png';
 import YalascaImage from '../public/images/yalasca.png';
 import { useRouter } from 'next/navigation';
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
+import { Github } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
@@ -71,8 +72,17 @@ export default function Home() {
             <Button onClick={() => router.push('/dashboard')} className="bg-black text-white hover:bg-gray-800 hover:scale-105 transition-transform">
               Ver Demostración <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white hover:scale-105 transition-transform">
+            {/* <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white hover:scale-105 transition-transform">
               Repositorio GitHub
+            </Button> */}
+
+
+            <Button 
+              variant="outline" 
+              className="border-black text-black hover:bg-black hover:text-white hover:scale-105 transition-transform"
+              onClick={() => window.open('https://github.com/Alexis0816/Analizador-LL1', '_blank', 'noopener,noreferrer')}
+            >
+              Repositorio GitHub <Github className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </motion.div>
