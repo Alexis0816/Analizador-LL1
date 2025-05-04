@@ -92,32 +92,26 @@ export default function Dashboard() {
 
   // Verificar si el script está cargado
   useEffect(() => {
-    // Comprobar si ya está disponible
+    let timeoutId: NodeJS.Timeout;
+  
     if (typeof window !== 'undefined' && (window as any).loadGrammar) {
       setIsScriptLoaded(true);
-      console.log("Script LL1.js detectado y listo para usar");
     } else {
-      // Registrar callback para cuando se cargue
-      LL1.onScriptLoaded(() => {
+      const callback = () => {
         setIsScriptLoaded(true);
-        console.log("Script LL1.js cargado mediante callback");
-      });
-      
-      // Manejar el caso en que el script no se cargue después de un tiempo
-      const timeout = setTimeout(() => {
+      };
+      LL1.onScriptLoaded(callback);
+  
+      timeoutId = setTimeout(() => {
         if (!isScriptLoaded) {
-          setError(
-            "No se pudo cargar el analizador LL(1). Por favor verifica lo siguiente:\n" +
-            "1. El archivo LL1.js debe estar en la carpeta /public/scripts/\n" +
-            "2. El archivo debe tener el nombre exacto 'LL1.js' (distingue mayúsculas y minúsculas)\n" +
-            "3. El contenido del archivo debe incluir las funciones necesarias (loadGrammar, parseWithTrace, etc.)\n" +
-            "Verifica la consola del navegador para más detalles sobre el error."
-          );
+          setError("No se pudo cargar el analizador LL(1)...");
         }
       }, 5000);
-      
-      return () => clearTimeout(timeout);
     }
+  
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [isScriptLoaded]);
 
   // Función para analizar la gramática y la entrada
@@ -127,9 +121,19 @@ export default function Dashboard() {
       return;
     }
 
-    if (!grammar.trim() || !input.trim()) {
-      setError("Por favor ingrese una gramática y una cadena de entrada");
-      setResults(null);
+    // if (!grammar.trim() || !input.trim()) {
+    //   setError("Por favor ingrese una gramática y una cadena de entrada");
+    //   setResults(null);
+    //   return;
+    // }
+
+    if (!grammar.trim()) {
+      setError("La gramática no puede estar vacía");
+      return;
+    }
+    
+    if (!input.trim()) {
+      setError("La cadena de entrada no puede estar vacía");
       return;
     }
 
@@ -233,9 +237,10 @@ export default function Dashboard() {
         setActiveTab("results");
       }, 1500);
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error durante el análisis:", err);
-      setError(`Error: ${err.message}`);
+      const errorMessage = err instanceof Error ? err.message : "Ocurrió un error desconocido";
+      setError(`Error: ${errorMessage}`);
       setResults(null);
     } finally {
       setIsAnalyzing(false);

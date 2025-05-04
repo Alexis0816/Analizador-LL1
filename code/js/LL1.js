@@ -252,6 +252,103 @@ class DerivationStep {
 }
 
 // Analizar con traza
+// function parseWithTrace(entrada, grammar) {
+//     const trace = [];
+//     const pila = new Stack();
+//     pila.push("$");
+//     pila.push(grammar.startSymbol);
+    
+//     // Paso de inicialización
+//     const initStep = new DerivationStep();
+//     initStep.stack = pila.toArray().reverse();
+//     initStep.input = [...entrada, "$"];
+//     initStep.rule = "Inicialización";
+//     trace.push(initStep);
+
+//     entrada.push("$");
+    
+//     // Construir la tabla LL(1)
+//     const table = buildLL1Table(grammar);
+    
+//     // Mapa de producciones para acceso rápido
+//     const productionsMap = new Map();
+//     for (const prodPair of grammar.orderedProductions) {
+//         productionsMap.set(prodPair.nonTerminal, prodPair.productions);
+//     }
+    
+//     while (!pila.empty()) {
+//         const step = new DerivationStep();
+//         step.stack = pila.toArray();
+//         step.stack.reverse(); // Porque toArray() devuelve en orden LIFO
+//         step.input = [...entrada];
+        
+//         const top = pila.top();
+//         const current = entrada.length > 0 ? entrada[0] : "$";
+        
+//         if (top === "$") {
+//             if (current === "$") {
+//                 step.rule = "Aceptado";
+//                 trace.push(step);
+//                 return trace;
+//             } else {
+//                 step.rule = "Rechazado: Fin inesperado";
+//                 trace.push(step);
+//                 return trace;
+//             }
+//         }
+        
+//         if (grammar.terminals.has(top)) {
+//             if (top === current) {
+//                 step.rule = "Match: " + top;
+//                 trace.push(step);
+//                 pila.pop();
+//                 entrada.shift();
+//             } else {
+//                 step.rule = "Error: Se esperaba '" + top + "', se encontró '" + current + "'";
+//                 trace.push(step);
+//                 return trace;
+//             }
+//         } else if (grammar.nonTerminals.has(top)) {
+//             // Verifico la tabla LL(1) para determinar qué producción se aplica
+//             if (table.has(top) && table.get(top).has(current)) {
+//                 const productionRule = table.get(top).get(current);
+//                 step.rule = productionRule;
+//                 trace.push(step);
+                
+//                 // Extraer la parte derecha de la producción
+//                 let arrowPos = productionRule.indexOf("->");
+//                 if (arrowPos === -1) arrowPos = productionRule.indexOf("→");
+//                 const rightSide = trim(productionRule.substring(arrowPos + 2));
+                
+//                 // Tokenizar la parte derecha
+//                 let symbols = [];
+//                 if (rightSide === "ε" || rightSide === "epsilon") {
+//                     // solo quitar el no terminal de la pila
+//                 } else {
+//                     symbols = rightSide.split(/\s+/).filter(s => s.length > 0);
+//                 }
+                
+//                 pila.pop(); // quito no terminales
+                
+//                 // se inserta símbolos de la producción en orden inverso
+//                 for (let i = symbols.length - 1; i >= 0; i--) {
+//                     pila.push(symbols[i]);
+//                 }
+//             } else {
+//                 step.rule = "Error: No hay producción para " + top + " con '" + current + "'";
+//                 trace.push(step);
+//                 return trace;
+//             }
+//         } else {
+//             step.rule = "Error: Símbolo '" + top + "' no reconocido";
+//             trace.push(step);
+//             return trace;
+//         }
+//     }
+    
+//     return trace;
+// }
+
 function parseWithTrace(entrada, grammar) {
     const trace = [];
     const pila = new Stack();
@@ -267,33 +364,28 @@ function parseWithTrace(entrada, grammar) {
 
     entrada.push("$");
     
-    // Construir la tabla LL(1)
+    // Construir la tabla LL(1) y conjuntos FOLLOW
+    const first = computeFirst(grammar);
+    const follow = computeFollow(grammar, first);
     const table = buildLL1Table(grammar);
-    
-    // Mapa de producciones para acceso rápido
-    const productionsMap = new Map();
-    for (const prodPair of grammar.orderedProductions) {
-        productionsMap.set(prodPair.nonTerminal, prodPair.productions);
-    }
     
     while (!pila.empty()) {
         const step = new DerivationStep();
-        step.stack = pila.toArray();
-        step.stack.reverse(); // Porque toArray() devuelve en orden LIFO
+        step.stack = pila.toArray().reverse();
         step.input = [...entrada];
         
         const top = pila.top();
-        const current = entrada.length > 0 ? entrada[0] : "$";
+        const current = entrada[0] || "$";
         
         if (top === "$") {
             if (current === "$") {
                 step.rule = "Aceptado";
                 trace.push(step);
-                return trace;
+                break;
             } else {
                 step.rule = "Rechazado: Fin inesperado";
                 trace.push(step);
-                return trace;
+                break;
             }
         }
         
@@ -304,45 +396,90 @@ function parseWithTrace(entrada, grammar) {
                 pila.pop();
                 entrada.shift();
             } else {
-                step.rule = "Error: Se esperaba '" + top + "', se encontró '" + current + "'";
+                step.rule = `Error: Se esperaba '${top}', se encontró '${current}'`;
                 trace.push(step);
-                return trace;
+                
+                // Recuperación: descartar terminal inesperado
+                const recoveryStep = new DerivationStep();
+                recoveryStep.stack = pila.toArray().reverse();
+                recoveryStep.input = [...entrada];
+                recoveryStep.rule = `Descartando terminal inesperado '${current}'`;
+                trace.push(recoveryStep);
+                
+                entrada.shift();
             }
         } else if (grammar.nonTerminals.has(top)) {
-            // Verifico la tabla LL(1) para determinar qué producción se aplica
             if (table.has(top) && table.get(top).has(current)) {
-                const productionRule = table.get(top).get(current);
-                step.rule = productionRule;
+                const production = table.get(top).get(current);
+                step.rule = production;
                 trace.push(step);
                 
-                // Extraer la parte derecha de la producción
-                let arrowPos = productionRule.indexOf("->");
-                if (arrowPos === -1) arrowPos = productionRule.indexOf("→");
-                const rightSide = trim(productionRule.substring(arrowPos + 2));
+                pila.pop();
                 
-                // Tokenizar la parte derecha
-                let symbols = [];
-                if (rightSide === "ε" || rightSide === "epsilon") {
-                    // solo quitar el no terminal de la pila
-                } else {
-                    symbols = rightSide.split(/\s+/).filter(s => s.length > 0);
-                }
-                
-                pila.pop(); // quito no terminales
-                
-                // se inserta símbolos de la producción en orden inverso
-                for (let i = symbols.length - 1; i >= 0; i--) {
-                    pila.push(symbols[i]);
+                // Manejar producción ε
+                if (!production.includes("ε") && !production.includes("epsilon")) {
+                    const parts = production.split(/→|->/);
+                    const symbols = parts[1].trim().split(/\s+/).filter(s => s.length > 0);
+                    
+                    // Añadir símbolos en orden inverso
+                    for (let i = symbols.length - 1; i >= 0; i--) {
+                        pila.push(symbols[i]);
+                    }
                 }
             } else {
-                step.rule = "Error: No hay producción para " + top + " con '" + current + "'";
+                step.rule = `Error: No hay producción para '${top}' con '${current}'`;
                 trace.push(step);
-                return trace;
+                
+                // Mostrar FOLLOW para diagnóstico
+                const followStep = new DerivationStep();
+                followStep.stack = pila.toArray().reverse();
+                followStep.input = [...entrada];
+                followStep.rule = `FOLLOW(${top}) = {${Array.from(follow.get(top)).join(', ')}}`;
+                trace.push(followStep);
+                
+                // Recuperación: descartar no terminal
+                const discardStep = new DerivationStep();
+                discardStep.stack = pila.toArray().reverse();
+                discardStep.input = [...entrada];
+                discardStep.rule = `Descartando no terminal '${top}' de la pila`;
+                trace.push(discardStep);
+                
+                pila.pop();
+                
+                // Buscar símbolo de sincronización en FOLLOW
+                let syncFound = false;
+                while (entrada.length > 0 && !syncFound) {
+                    if (follow.get(top).has(entrada[0])) {
+                        syncFound = true;
+                        const syncStep = new DerivationStep();
+                        syncStep.stack = pila.toArray().reverse();
+                        syncStep.input = [...entrada];
+                        syncStep.rule = `Símbolo '${entrada[0]}' encontrado en FOLLOW(${top})`;
+                        trace.push(syncStep);
+                    } else {
+                        const skipStep = new DerivationStep();
+                        skipStep.stack = pila.toArray().reverse();
+                        skipStep.input = [...entrada];
+                        skipStep.rule = `Descartando '${entrada[0]}' de la entrada`;
+                        trace.push(skipStep);
+                        
+                        entrada.shift();
+                    }
+                }
+                
+                if (!syncFound) {
+                    const errorStep = new DerivationStep();
+                    errorStep.stack = pila.toArray().reverse();
+                    errorStep.input = [...entrada];
+                    errorStep.rule = `Error: No se encontró símbolo de sincronización en FOLLOW(${top})`;
+                    trace.push(errorStep);
+                    break;
+                }
             }
         } else {
-            step.rule = "Error: Símbolo '" + top + "' no reconocido";
+            step.rule = `Error: Símbolo '${top}' no reconocido`;
             trace.push(step);
-            return trace;
+            break;
         }
     }
     
@@ -405,7 +542,7 @@ function tokenize(input, grammar) {
     return tokens;
 }
 
-// Calcular conjunto FIRST
+// conjuntos FIRST
 function computeFirst(grammar) {
     const first = new Map();
     
@@ -471,11 +608,11 @@ function computeFirst(grammar) {
     return first;
 }
 
-// Calcular conjunto FOLLOW
+// conjuntos FOLLOW
 function computeFollow(grammar, first) {
     const follow = new Map();
     
-    // Inicializar FOLLOW para todos los no terminales
+    // init a FOLLOW de todos los no terminales
     for (const nt of grammar.nonTerminals) {
         follow.set(nt, new Set());
     }
