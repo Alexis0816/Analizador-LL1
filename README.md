@@ -1,7 +1,7 @@
 # Analizador Sintáctico LL(1) Parser
 
 ## Integrantes
-- Ronald Jesus Condor Blas - Ciencias de la Computación
+- Ronal Jesus Condor Blas - Ciencias de la Computación
 - Alexis Raza Estrada - Ciencias de la Computación
 - Joaquín Salinas Salas - Ciencias de la Computación
 
